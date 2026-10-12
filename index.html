@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Super Sandwich Maker</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Arial,sans-serif;
+  background:linear-gradient(135deg,#fff3ce,#ffc6a0);
+  color:#403026;text-align:center;
+}
+header{background:#f76b36;color:white;padding:22px}
+h1{margin:0;font-size:36px}
+main{max-width:1050px;margin:25px auto;padding:15px;
+  display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.panel{background:white;border-radius:22px;padding:24px;
+  box-shadow:0 8px 25px #a65b3533}
+h2{color:#dc552a}
+.options{display:flex;flex-wrap:wrap;gap:9px;justify-content:center}
+button{
+  border:0;border-radius:12px;padding:12px 15px;
+  background:#ffdf9c;cursor:pointer;font-weight:bold;
+  transition:.2s;font-size:14px
+}
+button:hover{transform:scale(1.06);background:#ffba66}
+button.selected{background:#ff783d;color:white}
+.actions button{background:#f76b36;color:white;margin:6px}
+.sandwich{
+  min-height:330px;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;
+  padding:20px;background:#f8f4ed;border-radius:20px
+}
+.layer{
+  width:235px;height:22px;margin:2px;
+  border-radius:40%;box-shadow:0 3px 4px #0002;
+  animation:drop .35s ease-out
+}
+.bread{height:48px;background:#d68b40;border:5px solid #ad692b}
+.top{border-radius:95px 95px 20px 20px}
+.bottom{border-radius:15px 15px 45px 45px}
+.white{background:#e9c18a;border-color:#c8955b}
+.wholemeal{background:#967044;border-color:#6e4c2c}
+.sourdough{background:#e0a65d;border-color:#b87936}
+.lettuce{background:#75c74e;height:13px}
+.tomato{background:#ef5149;height:17px}
+.cheese{background:#ffca2d;height:12px}
+.ham{background:#ee91a0;height:19px}
+.chicken{background:#e8b87b;height:22px}
+.bacon{background:repeating-linear-gradient(
+  45deg,#9e3f27 0 12px,#df956b 12px 19px);height:16px}
+.cucumber{background:#75bd7c;height:14px}
+.onion{background:#b78ad2;height:12px}
+.egg{background:#fff4c8;height:19px;border:5px solid #f6cc48}
+.mayo{background:#fff4ce;height:8px}
+.mustard{background:#eabf23;height:8px}
+.price{font-size:30px;color:#18864c;font-weight:bold}
+#message{min-height:24px;color:#a14e25;font-weight:bold}
+@keyframes drop{
+  from{opacity:0;transform:translateY(-45px) scale(.8)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media(max-width:700px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<h1>🥪 Super Sandwich Maker</h1>
+<p>Build your dream sandwich, one delicious layer at a time!</p>
+</header>
+<main>
+<section class="panel">
+<h2>🍞 Choose Your Bread</h2>
+<div class="options" id="breads"></div>
+<h2>🥬 Choose Your Fillings</h2>
+<p>Click a filling to add it. Click again to add more!</p>
+<div class="options" id="fillings"></div>
+<h2>✨ Sandwich Controls</h2>
+<div class="actions">
+<button onclick="surprise()">🎲 Surprise Me!</button>
+<button onclick="removeLast()">↩ Remove Last</button>
+<button onclick="reset()">🗑 Start Again</button>
+<button onclick="order()">🛒 Order Sandwich</button>
+</div>
+</section>
+<section class="panel">
+<h2>👨‍🍳 Your Sandwich</h2>
+<div class="sandwich" id="sandwich"></div>
+<h3 id="count">0 fillings added</h3>
+<p>Total Price</p>
+<div class="price" id="price">€2.50</div>
+<p id="message">Choose your favourite fillings!</p>
+<h3>🧾 Your Ingredients</h3>
+<p id="ingredients">Just bread so far!</p>
+</section>
+</main>
+<script>
+const breadTypes=[
+ {name:"White",price:2.5,css:"white"},
+ {name:"Wholemeal",price:2.8,css:"wholemeal"},
+ {name:"Sourdough",price:3.2,css:"sourdough"}
+];
+const fillings=[
+ {name:"Lettuce",emoji:"🥬",price:.40,css:"lettuce"},
+ {name:"Tomato",emoji:"🍅",price:.50,css:"tomato"},
+ {name:"Cheese",emoji:"🧀",price:.80,css:"cheese"},
+ {name:"Ham",emoji:"🍖",price:1.20,css:"ham"},
+ {name:"Chicken",emoji:"🍗",price:1.50,css:"chicken"},
+ {name:"Bacon",emoji:"🥓",price:1.40,css:"bacon"},
+ {name:"Cucumber",emoji:"🥒",price:.40,css:"cucumber"},
+ {name:"Onion",emoji:"🧅",price:.30,css:"onion"},
+ {name:"Egg",emoji:"🥚",price:1.00,css:"egg"},
+ {name:"Mayo",emoji:"🥣",price:.30,css:"mayo"},
+ {name:"Mustard",emoji:"🌟",price:.20,css:"mustard"}
+];
+let bread=breadTypes[0];
+let chosen=[];
+const euro=n=>"€"+n.toFixed(2);
+function setup(){
+ document.getElementById("breads").innerHTML=
+ breadTypes.map((b,i)=>
+ `<button onclick="chooseBread(${i})">${b.name} ${euro(b.price)}</button>`
+ ).join("");
+ document.getElementById("fillings").innerHTML=
+ fillings.map((f,i)=>
+ `<button onclick="addFilling(${i})">${f.emoji} ${f.name}<br>${euro(f.price)}</button>`
+ ).join("");
+ render();
+}
+function chooseBread(i){
+ bread=breadTypes[i];render();
+}
+function addFilling(i){
+ chosen.push(fillings[i]);render();
+}
+function render(){
+ const layers=chosen.map(f=>
+ `<div class="layer ${f.css}" title="${f.name}"></div>`
+ ).join("");
+ const breadClass=bread.css;
+ document.getElementById("sandwich").innerHTML=
+ `<div class="layer bread top ${breadClass}"></div>`+
+ [...chosen].reverse().map(f=>
+ `<div class="layer ${f.css}" title="${f.name}"></div>`
+ ).join("")+
+ `<div class="layer bread bottom ${breadClass}"></div>`;
+ const total=bread.price+
+ chosen.reduce((sum,f)=>sum+f.price,0);
+ document.getElementById("price").textContent=euro(total);
+ document.getElementById("count").textContent=
+ chosen.length+" fillings added";
+ document.getElementById("ingredients").textContent=
+ bread.name+" bread"+
+ (chosen.length?", "+chosen.map(f=>f.name).join(", "):"");
+ document.querySelectorAll("#breads button").forEach((btn,i)=>
+ btn.classList.toggle("selected",bread===breadTypes[i]));
+}
+function removeLast(){
+ if(chosen.length)chosen.pop();
+ render();
+}
+function reset(){
+ chosen=[];bread=breadTypes[0];
+ document.getElementById("message").textContent=
+ "Ready for a fresh sandwich!";
+ render();
+}
+function surprise(){
+ chosen=[];
+ bread=breadTypes[Math.floor(Math.random()*breadTypes.length)];
+ let pool=[...fillings];
+ for(let i=0;i<5;i++){
+  let index=Math.floor(Math.random()*pool.length);
+  chosen.push(pool.splice(index,1)[0]);
+ }
+ document.getElementById("message").textContent=
+ "🎉 Chef's surprise! Enjoy!";
+ render();
+}
+function order(){
+ if(!chosen.length){
+  document.getElementById("message").textContent=
+  "Add some tasty fillings first!";
+  return;
+ }
+ const total=bread.price+
+ chosen.reduce((sum,f)=>sum+f.price,0);
+ alert("🥪 Sandwich order created!\n\n"+
+ bread.name+" bread\n"+
+ chosen.map(f=>f.name).join(", ")+"\n\n"+
+ "Total: "+euro(total)+
+ "\n\nDemo only - no real order placed.");
+}
+setup();
+</script>
+</body>
+</html>
